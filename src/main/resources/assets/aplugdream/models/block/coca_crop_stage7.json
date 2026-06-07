@@ -1,0 +1,1 @@
+{ "parent": "minecraft:block/crop", "textures": { "crop": "aplugdream:block/coca_crop_stage7" } }
