@@ -4,7 +4,11 @@ import com.stoch.aplugdream.APlugDreamCore;
 import com.stoch.aplugdream.capability.PlayerBankProvider;
 import com.stoch.aplugdream.capability.PlayerWantedProvider;
 import com.stoch.aplugdream.capability.PlayerWantedData;
+import com.stoch.aplugdream.network.ModMessages;
+import com.stoch.aplugdream.network.packet.SyncBankBalanceS2CPacket;
+import com.stoch.aplugdream.network.packet.SyncWantedLevelS2CPacket;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraftforge.common.capabilities.RegisterCapabilitiesEvent;
@@ -28,21 +32,35 @@ public class ModEvents {
         }
     }
 
+    /**
+     * FIX: Synca bank balance e wanted level al client appena il player entra nel mondo.
+     * Senza questo, il client mostra sempre 0 finché non viene mandato un aggiornamento.
+     */
+    @SubscribeEvent
+    public static void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
+        if (event.getEntity() instanceof ServerPlayer serverPlayer) {
+            serverPlayer.getCapability(PlayerBankProvider.PLAYER_BANK).ifPresent(bank ->
+                ModMessages.sendToPlayer(new SyncBankBalanceS2CPacket(bank.getBalance()), serverPlayer)
+            );
+            serverPlayer.getCapability(PlayerWantedProvider.PLAYER_WANTED).ifPresent(wanted ->
+                ModMessages.sendToPlayer(new SyncWantedLevelS2CPacket(wanted.getWantedLevel()), serverPlayer)
+            );
+        }
+    }
+
     @SubscribeEvent
     public static void onPlayerCloned(PlayerEvent.Clone event) {
         if (event.isWasDeath()) {
-            // Copy bank balance on death
-            event.getOriginal().getCapability(PlayerBankProvider.PLAYER_BANK).ifPresent(oldBank -> {
-                event.getEntity().getCapability(PlayerBankProvider.PLAYER_BANK).ifPresent(newBank -> {
-                    newBank.copyFrom(oldBank);
-                });
-            });
-            // Wanted level resets on death (handled in copyFrom)
-            event.getOriginal().getCapability(PlayerWantedProvider.PLAYER_WANTED).ifPresent(oldWanted -> {
-                event.getEntity().getCapability(PlayerWantedProvider.PLAYER_WANTED).ifPresent(newWanted -> {
-                    newWanted.copyFrom(oldWanted);
-                });
-            });
+            event.getOriginal().getCapability(PlayerBankProvider.PLAYER_BANK).ifPresent(oldBank ->
+                event.getEntity().getCapability(PlayerBankProvider.PLAYER_BANK).ifPresent(newBank ->
+                    newBank.copyFrom(oldBank)
+                )
+            );
+            event.getOriginal().getCapability(PlayerWantedProvider.PLAYER_WANTED).ifPresent(oldWanted ->
+                event.getEntity().getCapability(PlayerWantedProvider.PLAYER_WANTED).ifPresent(newWanted ->
+                    newWanted.copyFrom(oldWanted)
+                )
+            );
         }
     }
 
