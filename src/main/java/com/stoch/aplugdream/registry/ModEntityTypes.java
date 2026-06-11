@@ -8,6 +8,7 @@ import net.minecraft.world.entity.MobCategory;
 import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
+import net.minecraftforge.eventbus.api.IEventBus;
 
 public class ModEntityTypes {
     public static final DeferredRegister<EntityType<?>> ENTITY_TYPES =
@@ -24,4 +25,8 @@ public class ModEntityTypes {
                     () -> EntityType.Builder.of(PoliceEntity::new, MobCategory.CREATURE)
                             .sized(0.6F, 1.8F)
                             .build("police"));
+							
+	public static void register(IEventBus eventBus) {
+    ENTITY_TYPES.register(eventBus);
+}
 }
